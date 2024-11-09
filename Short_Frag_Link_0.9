@@ -1,0 +1,128 @@
+// ==UserScript==
+// @name         Short Frag Link
+// @namespace    http://tampermonkey.net/
+// @version      0.9
+// @description  選択箇所へのリンクのコンパクトなリンクを生成する
+// @author       Ameba Blog User
+// @match        https://*/*
+// @match        http://*/*
+// @exclude      https://blog.ameba.jp/ucs/*
+// @exclude      https://www.ameba.jp/home
+// @noframes
+// @grant        none
+// ==/UserScript==
+
+
+let frag_link;
+let page_body=document.body;
+let help_url="https://ameblo.jp/personwritep/entry-12829625424.html";
+
+if(page_body){
+
+    page_body.oncontextmenu=function(event){
+
+        if(event.altKey){ // 反転選択した「テキスト」を「Alt+右Click」
+            let selection=document.getSelection();
+            let select_text=selection.toString();
+
+            if(select_text){
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                document.getSelection().removeAllRanges(); // 選択範囲をクリア
+
+                let url=location.href.split('?')[0].split('#')[0];
+
+                if(url){
+                    select_text=encodeURIComponent(select_text); // URLエンコード
+                    select_text=select_text.replace(/-/g, '%2D').replace(/'/g, '%27'); //「-」「'」置換
+
+                    frag_link=
+                        url +'#:~:text='+ select_text;
+
+                    if(navigator.clipboard){
+                        navigator.clipboard.writeText(frag_link); // Clipboardへコピー
+                        test(frag_link); }}}
+
+        }}
+
+
+    function test(test_url){
+        let x_svg=
+            '<svg style="width: 48px; height: 48px;" viewBox="0 0 512 512">'+
+            '<path style="fill: #00000070;" d="M256 0C114.6 0 0 114.6 0 256c0 141.4 '+
+            '114.6 256 256 256C397.4 512 512 397.4 512 256C512 114.6 397.4 0 256 0z">'+
+            '</path><path d="M363.1 333.6l-29.6 29.6l-77.6-77.6l-77.5 '+
+            '77.6l-29.6-29.6l77.5-77.5l-77.5-77.5l29.6-29.6l77.5 77.5l77.6-77.5l29.6 '+
+            '29.6l-77.5 77.5L363.1 333.6z" style="fill: #fff;"></path></svg>';
+
+        let help_svg=
+            '<svg width="40" height="24" viewBox="0 0 200 200">'+
+            '<path style="fill: #000" d="M92 14C54 19 23 44 15 82C4 135 49 '+
+            '192 105 186C143 181 175 156 183 118C195 64 149 7 92 14z"></path>'+
+            '<path style="fill: #fff" d="M63 69C70 67 76 64 82 61C92 58 116 58 110 '+
+            '76C103 96 81 101 81 125L112 125C112 111 123 105 132 96C141 85 1'+
+            '46 69 140 55C131 34 102 33 83 37C78 38 69 39 65 43C60 47 63 63 63 '+
+            '69M83 143L83 169L111 169L111 143L83 143z"></path></svg>';
+
+        let test_iframe=
+            '<div class="sfl_test">'+
+            '<iframe class="sfl_iframe" src="'+ test_url +'"></iframe>'+
+            '<div class="sfl_cover">'+
+            '<div class="sfl_x">'+ x_svg +
+            '<a href="'+ help_url + '" rel="noopener" target="_blank">'+ help_svg +'</a>'+
+            '</div>'+
+            '<style>'+
+            '.sfl_test { position: fixed; left: 0; bottom: 0; opacity: 0; '+
+            'width: 100vw; height: 50vh; outline: 1px solid #fff; border-top: 8px solid #000; '+
+            'background: #fff; z-index: 10000000000; } '+
+            '.sfl_iframe { position: relative; width: 100% !important; height: 100% !important; '+
+            'border: none; z-index: 10000000000; } '+
+            '.sfl_cover { position: absolute; top: 0; left: 0 ; width: 100%; height: 100%; '+
+            'cursor: pointer; z-index: 10000000001; } '+
+            '.sfl_x { position: absolute; top: 10px; left: calc(50% - 24px); opacity: 0; } '+
+            '.sfl_cover:hover .sfl_x { opacity: 1; } '+
+            '.sfl_x a { position: absolute; top: 0; left: 45px; opacity: 0; } '+
+            '.sfl_x:hover a { opacity: 1; } '+
+            '</style></div>';
+
+        if(document.querySelector('.sfl_test')){
+            document.querySelector('.sfl_test').remove(); }
+        document.body.insertAdjacentHTML('beforeend', test_iframe);
+
+
+        let sfl_test=document.querySelector('.sfl_test');
+        let sfl_cover=document.querySelector('.sfl_cover');
+        if(sfl_test && sfl_cover){
+            let sfl_iframe=sfl_test.querySelector('.sfl_iframe');
+            sfl_iframe.onload=function(){
+                let if_doc=sfl_iframe.contentDocument;
+                if(if_doc){
+                    sfl_test.style.opacity='1';
+
+                    let if_html=if_doc.documentElement;
+                    let style='<style>html { scroll-behavior: unset; }</style>';
+                    if_html.insertAdjacentHTML('beforeend', style);
+
+                    sfl_cover.onwheel=function(event){
+                        event.preventDefault();
+                        if_html.scrollBy(0, event.deltaY); }}
+
+                else{ // X-Frame-Options：DENY で iframe表示が出来ない場合
+                    sfl_test.remove();
+                    window.open(test_url, '_blank'); }} // 別タブでリンクテスト
+
+
+            sfl_cover.onclick=function(event){
+                event.stopImmediatePropagation();
+                sfl_test.remove(); }
+
+            let sfl_help=sfl_cover.querySelector('.sfl_x a');
+            if(sfl_help){
+                sfl_help.onclick=function(event){
+                    event.stopImmediatePropagation(); }}}
+
+    } //test()
+}
+
+
+
