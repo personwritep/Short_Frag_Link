@@ -1,0 +1,94 @@
+// ==UserScript==
+// @name         Short Frag Link
+// @namespace    http://tampermonkey.net/
+// @version      0.7
+// @description  選択箇所へのリンクのコンパクトなリンクを生成する
+// @author       Ameba Blog User
+// @match        https://*/*
+// @match        http://*/*
+// @grant        none
+// ==/UserScript==
+
+let frag_link;
+let page_body=document.body;
+
+if(page_body){
+
+    page_body.oncontextmenu=function(event){
+
+        if(event.altKey){ // 反転選択した「テキスト」を「Alt+右Click」
+            let selection=document.getSelection();
+            let select_text=selection.toString();
+
+            if(select_text){
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                document.getSelection().removeAllRanges(); // 選択範囲をクリア
+
+                let url=location.href.split('?')[0].split('#')[0];
+
+                if(url){
+                    select_text=encodeURIComponent(select_text); // URLエンコード
+                    select_text=select_text.replace(/-/g, '%2D').replace(/'/g, '%27'); //「-」「'」置換
+
+                    frag_link=
+                        url +'#:~:text='+ select_text;
+
+                    if(navigator.clipboard){
+                        navigator.clipboard.writeText(frag_link); // Clipboardへコピー
+                        test(frag_link); }}}
+
+        }}
+
+
+    function test(test_url){
+        let SVG_x=
+            '<svg style="width: 48px; height: 48px;" viewBox="0 0 512 512">'+
+            '<path style="fill: #00000070;" d="M256 0C114.6 0 0 114.6 0 256c0 141.4 '+
+            '114.6 256 256 256C397.4 512 512 397.4 512 256C512 114.6 397.4 0 256 0z">'+
+            '</path><path d="M363.1 333.6l-29.6 29.6l-77.6-77.6l-77.5 '+
+            '77.6l-29.6-29.6l77.5-77.5l-77.5-77.5l29.6-29.6l77.5 77.5l77.6-77.5l29.6 '+
+            '29.6l-77.5 77.5L363.1 333.6z" style="fill: #fff;"></path></svg>';
+
+        let test_iframe=
+            '<div class="sfl_test">'+
+            '<iframe class="sfl_iframe" src="'+ test_url +'"></iframe>'+
+            '<div class="sfl_cover"><div class="sfl_x">'+ SVG_x +'</div></div>'+
+            '<style>'+
+            '.sfl_test { position: fixed; left: 0; bottom: 0; opacity: 0; '+
+            'width: 100vw; height: 50vh; outline: 1px solid #fff; border-top: 8px solid #000; '+
+            'background: #fff; z-index: 10000000000; } '+
+            '.sfl_iframe { position: relative; width: 100% !important; height: 100% !important; '+
+            'border: none; z-index: 10000000000; } '+
+            '.sfl_cover { position: absolute; top: 0; left: 0 ; width: 100%; height: 100%; '+
+            'cursor: pointer; z-index: 10000000001; } '+
+            '.sfl_x { position: absolute; top: 10px; left: calc(50% - 24px); opacity: 0; } '+
+            '.sfl_cover:hover .sfl_x { opacity: 1; } '+
+            '</style></div>';
+
+        if(document.querySelector('.sfl_test')){
+            document.querySelector('.sfl_test').remove(); }
+        document.body.insertAdjacentHTML('beforeend', test_iframe);
+
+
+        let sfl_test=document.querySelector('.sfl_test');
+        if(sfl_test){
+            let sfl_iframe=document.querySelector('.sfl_iframe');
+            sfl_iframe.onload=function(){
+                let if_doc=sfl_iframe.contentDocument;
+                if(if_doc){
+                    sfl_test.style.opacity='1'; }
+                else{ // X-Frame-Options：DENY で iframe表示が出来ない場合
+                    sfl_test.remove();
+                    window.open(test_url, '_blank'); }} // 別タブでリンクテスト
+
+
+            let sfl_cover=document.querySelector('.sfl_cover');
+            if(sfl_cover){
+                sfl_cover.onclick=function(event){
+                    event.stopImmediatePropagation();
+                    sfl_test.remove(); }}}
+
+    } //test()
+
+}
