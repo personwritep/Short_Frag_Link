@@ -1,0 +1,52 @@
+// ==UserScript==
+// @name         Short Frag Link
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  選択箇所へのリンクのコンパクトなリンクを生成する
+// @author       Ameba Blog User
+// @match        https://ameblo.jp/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=ameblo.jp
+// @grant        none
+// ==/UserScript==
+
+
+let user_id;
+let page_id;
+let frag_link;
+let entrybody=document.querySelector('#entryBody');
+
+if(entrybody){
+
+    entrybody.oncontextmenu=function(event){
+
+        if(event.altKey){ // 反転選択をした部分を「Alt+右Click」
+            let range;
+            let selection=document.getSelection();
+            if(selection && selection.rangeCount>0){
+                range=selection.getRangeAt(0); }
+
+            let select_text=document.createElement('div');
+            select_text.appendChild(range.cloneContents());
+            select_text=select_text.textContent;
+
+            if(select_text){
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                document.getSelection().removeAllRanges(); // 選択範囲をクリア
+
+                let entry=document.querySelector('.js-entryWrapper');
+                if(entry){
+                    user_id=entry.getAttribute('data-unique-ameba-id');
+                    page_id=entry.getAttribute('data-unique-entry-id'); }
+
+                if(user_id && page_id){
+                    select_text=encodeURIComponent(select_text); // URLエンコード
+                    select_text=select_text.replace(/-/g, '%2D').replace(/'/g, '%27'); //「-」「'」は置換
+
+                    frag_link=
+                        'https://ameblo.jp/'+ user_id +'/entry-'+ page_id +'.html#:~:text='+ select_text;
+
+                    if (navigator.clipboard){ // Clipboardへコピー
+                        navigator.clipboard.writeText(frag_link); }}}
+
+        }}}
