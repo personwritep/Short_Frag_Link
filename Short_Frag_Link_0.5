@@ -1,0 +1,73 @@
+// ==UserScript==
+// @name         Short Frag Link
+// @namespace    http://tampermonkey.net/
+// @version      0.5
+// @description  選択箇所へのリンクのコンパクトなリンクを生成する
+// @author       Ameba Blog User
+// @match        https://*/*
+// @match        http://*/*
+// @grant        none
+// ==/UserScript==
+
+let frag_link;
+let page_body=document.body;
+
+if(page_body){
+
+    page_body.oncontextmenu=function(event){
+
+        if(event.altKey){ // 反転選択した「テキスト」を「Alt+右Click」
+            let selection=document.getSelection();
+            let select_text=selection.toString();
+
+            if(select_text){
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                document.getSelection().removeAllRanges(); // 選択範囲をクリア
+
+                let url=location.href.split('?')[0].split('#')[0];
+
+                if(url){
+                    select_text=encodeURIComponent(select_text); // URLエンコード
+                    select_text=select_text.replace(/-/g, '%2D').replace(/'/g, '%27'); //「-」「'」置換
+
+                    frag_link=
+                        url +'#:~:text='+ select_text;
+
+                    if(navigator.clipboard){
+                        navigator.clipboard.writeText(frag_link); // Clipboardへコピー
+
+                        setTimeout(()=>{
+                            test(frag_link);
+                        }, 20); }}}
+
+        }}
+
+
+    function test(test_url){
+        let test_iframe=
+            '<div class="sfl_test">'+
+            '<iframe class="sfl_iframe" src="'+ test_url +'"></iframe>'+
+            '<div class="sfl_cover"></div>'+
+            '<style>'+
+            '.sfl_test { position: fixed; left: 0; bottom: 0; z-index: 10000000000; '+
+            'width: 100vw; height: 50vh; border-top: 8px solid #000; background: #fff; } '+
+            '.sfl_iframe { width: 100% !important; height: 100% !important; border: none; } '+
+            '.sfl_cover { position: absolute; top: 0; left: 0 ; width: 100%; height: 100%; } '+
+            '</style></div>';
+
+        if(document.querySelector('.sfl_test')){
+            document.querySelector('.sfl_test').remove(); }
+        document.body.insertAdjacentHTML('beforeend', test_iframe);
+
+
+        let sfl_test=document.querySelector('.sfl_test');
+        let sfl_cover=document.querySelector('.sfl_cover');
+        if(sfl_test && sfl_cover){
+            sfl_cover.onclick=function(event){
+                event.stopImmediatePropagation();
+                sfl_test.remove(); }}
+
+    } //test()
+
+}
