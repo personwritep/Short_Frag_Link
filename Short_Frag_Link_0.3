@@ -1,0 +1,74 @@
+// ==UserScript==
+// @name         Short Frag Link
+// @namespace    http://tampermonkey.net/
+// @version      0.3
+// @description  選択箇所へのリンクのコンパクトなリンクを生成する
+// @author       Ameba Blog User
+// @match        https://*/*
+// @match        http://*/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=ameblo.jp
+// @grant        none
+// ==/UserScript==
+
+let frag_link;
+let page_body=document.body;
+
+if(page_body){
+
+    page_body.oncontextmenu=function(event){
+
+        if(event.altKey){ // 反転選択した「テキスト」を「Alt+右Click」
+
+            let range;
+            let selection=document.getSelection();
+            if(selection && selection.rangeCount>0){
+                range=selection.getRangeAt(0); }
+
+            let select_text=document.createElement('div');
+            select_text.appendChild(range.cloneContents());
+            select_text=select_text.textContent;
+
+            if(select_text){
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                document.getSelection().removeAllRanges(); // 選択範囲をクリア
+
+                let url=location.href.split('?')[0].split('#')[0];
+
+                if(url){
+                    select_text=encodeURIComponent(select_text); // URLエンコード
+                    select_text=select_text.replace(/-/g, '%2D').replace(/'/g, '%27'); //「-」「'」置換
+
+                    frag_link=
+                        url +'#:~:text='+ select_text;
+
+                    if(navigator.clipboard){
+                        navigator.clipboard.writeText(frag_link); // Clipboardへコピー
+
+                        setTimeout(()=>{
+                            test(frag_link);
+                        }, 20); }
+                }}
+
+        }}
+
+
+    function test(test_url){
+        let test_iframe=
+            '<div class="sfl_test">'+
+            '<iframe class="sfl_iframe" src="'+ test_url +'"></iframe>'+
+            '<style>'+
+            '.sfl_test { position: fixed; left: 0; bottom: 0; z-index: 4000; '+
+            'width: 100vw; height: 400px; } '+
+            '.sfl_iframe { width: 100%; height: 100%; }'+
+            '</style></div>';
+
+        if(document.querySelector('.sfl_test')){
+            document.querySelector('.sfl_test').remove(); }
+        document.body.insertAdjacentHTML('beforeend', test_iframe);
+
+    } //test()
+
+
+
+}
